@@ -1,0 +1,12 @@
+{
+    "name": "Python Project",
+    "dockerFile": "../Dockerfile",
+    "settings": {
+        "python.pythonPath": "/p_3_10/bin/python3",
+        "python.languageServer": "Pylance"
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+    ]
+}

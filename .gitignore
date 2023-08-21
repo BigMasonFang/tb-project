@@ -1,0 +1,6 @@
+*.pickle
+*.docm
+
+# .devcontainer
+results/*
+.Trash-0

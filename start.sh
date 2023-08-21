@@ -1,0 +1,1 @@
+jupyter-lab --notebook-dir=/app --no-browser --ip=0.0.0.0 --port=5000 --allow-root

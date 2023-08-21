@@ -1,0 +1,19 @@
+version: '3'
+services:
+  tb-app:
+    image: 'tb-project:latest'
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - PIP_SOURCE=http://mirrors.cloud.tencent.com/pypi/simple
+        - PIP_HOST=mirrors.cloud.tencent.com
+    ports:
+      - 5000:5000
+    environment:
+      - PIP_SOURCE=http://mirrors.cloud.tencent.com/pypi/simple
+      - PIP_HOST=mirrors.cloud.tencent.com
+    volumes:
+      - .:/app
+    # depends_on:
+    # networks:
