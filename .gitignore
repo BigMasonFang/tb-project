@@ -4,3 +4,5 @@
 # .devcontainer
 results/*
 .Trash-0
+__pycache__
+__pycache__/*
