@@ -16,11 +16,12 @@
 4. docker files
 
 ## configuration
+0. you can change pip source from dock-compose.yaml file, untuntu software souce from etc/sources.list
 1. to build docker image and start jupyter server
 
     `docker-compose -f docker-compose.yaml up`
 
-2. once built, visit jupyter lab through the url show console like
+2. once built, visit jupyter lab through the url show console like (token will be shown in)
 
     `http://127.0.0.1:5000/lab?token=6b372517a0bbc447ed4702faa1b9a81675d4fad827e51ed2`
 
