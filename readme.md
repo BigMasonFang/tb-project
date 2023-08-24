@@ -16,6 +16,7 @@
 4. docker files
 
 ## configuration
+0. put the .pickle data in the folder
 1. to build docker image and start jupyter server
 
     `docker-compose -f docker-compose.yaml up`

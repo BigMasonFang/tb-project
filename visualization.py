@@ -1,9 +1,9 @@
 """visualization funcs"""
 from typing import Dict, List
+from math import sqrt, ceil
 
 import matplotlib.pyplot as plt
 from numpy.typing import NDArray
-import umap
 from matplotlib.pyplot import Axes
 from pandas import DataFrame, Series
 from sklearn.cluster import DBSCAN, KMeans
@@ -53,51 +53,57 @@ class Ploter:
         ax.legend()
 
     @classmethod
-    def plot_Kmeans_on_tsne_data(cls, data: NDArray, cluster: NDArray, **kwargs):
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.subplots(1, 1)
-        scatter_params = [
-            {
-                'x': data[cluster == 0, 0],
-                'y': data[cluster == 0, 1],
-                'label': 'cluster 0',
-                'marker': '^',
-                'color': 'c',
-                'edgecolors': 'b',
-                'alpha': 0.8,
-                's': 40
-            },
-            {
-                'x': data[cluster == 1, 0],
-                'y': data[cluster == 1, 1],
-                'label': 'cluster 1',
-                'marker': 'o',
-                'color': 'r',
-                'edgecolors': 'g',
-                'alpha': 0.95,
-                's': 40
-            },
-            {
-                'x': data[cluster == 2, 0],
-                'y': data[cluster == 2, 1],
-                'label': 'cluster 2',
-                'marker': 'p',
-                'color': 'g',
-                'alpha': 0.95,
-                's': 40
-            },
-        ]
-        cls.sub_plot_scatter(ax, scatter_params, 'kmeans cluster')
+    def plot_Kmeans_2D_data(cls, cluster: NDArray, manifold_datas: Dict[str, NDArray], title: str):
+        """plot reducted 2D data with kmeans cluster on it"""
+        fig = plt.figure(figsize=(15, 10))
+        plot_col_num = ceil(sqrt(len(manifold_datas)))
+        axs: NDArray = fig.subplots(plot_col_num, plot_col_num)
+        axs = axs.flatten()
+
+        for i, (sub_title, data) in enumerate(manifold_datas.items()):
+            scatter_params = [
+                {
+                    'x': data[cluster == 0, 0],
+                    'y': data[cluster == 0, 1],
+                    'label': 'cluster 0',
+                    'marker': '^',
+                    'color': 'c',
+                    'edgecolors': 'b',
+                    'alpha': 0.8,
+                    's': 40
+                },
+                {
+                    'x': data[cluster == 1, 0],
+                    'y': data[cluster == 1, 1],
+                    'label': 'cluster 1',
+                    'marker': 'o',
+                    'color': 'r',
+                    'edgecolors': 'g',
+                    'alpha': 0.95,
+                    's': 40
+                },
+                {
+                    'x': data[cluster == 2, 0],
+                    'y': data[cluster == 2, 1],
+                    'label': 'cluster 2',
+                    'marker': 'p',
+                    'color': 'g',
+                    'alpha': 0.95,
+                    's': 40
+                },
+            ]
+            x_label = f'${sub_title}_{{1}}$'
+            y_label = f'${sub_title}_{{2}}$'
+            cls.sub_plot_scatter(axs[i], scatter_params, sub_title, x_label, y_label)
+        fig.suptitle(title)
 
     @classmethod
-    def plot_tsne(
-        cls,
-        data: NDArray,
-        labels: DataFrame,
-    ):
+    def plot_labeled_2D_data(cls, data: NDArray, labels: DataFrame, title: str, xlabel: str, ylabel: str):
+        """plot reducted to 2D data with labels on it"""
         fig = plt.figure(figsize=(20, 5))
         ax1, ax2, ax3 = fig.subplots(1, 3)
-        scatter_params_t_sne = [
+
+        scatter_params = [
             {
                 'label': 'Susceptible',
                 'marker': '^',
@@ -119,17 +125,27 @@ class Ploter:
             'x': data[labels['ny'] == i, 0],
             'y': data[labels['ny'] == i, 1],
             **param
-        } for i, param in enumerate(scatter_params_t_sne)]
+        } for i, param in enumerate(scatter_params)]
         scatter_params_serious = [{
             'x': data[labels['serious'] == i, 0],
             'y': data[labels['serious'] == i, 1],
             **param
-        } for i, param in enumerate(scatter_params_t_sne)]
+        } for i, param in enumerate(scatter_params)]
         scatter_params_morethan3 = [{
             'x': data[labels['morethan3'] == i, 0],
             'y': data[labels['morethan3'] == i, 1],
             **param
-        } for i, param in enumerate(scatter_params_t_sne)]
-        cls.sub_plot_scatter(ax1, scatter_params_ny, 'resistent to at least one drug')
-        cls.sub_plot_scatter(ax2, scatter_params_serious, 'resistent to at least two drugs')
-        cls.sub_plot_scatter(ax3, scatter_params_morethan3, 'resistent to at least three drugs')
+        } for i, param in enumerate(scatter_params)]
+
+        cls.sub_plot_scatter(ax1, scatter_params_ny, 'resistent to at least one drug', xlabel, ylabel)
+        cls.sub_plot_scatter(ax2, scatter_params_serious, 'resistent to at least two drugs', xlabel, ylabel)
+        cls.sub_plot_scatter(ax3, scatter_params_morethan3, 'resistent to at least three drugs', xlabel, ylabel)
+        fig.suptitle(title)
+
+    @classmethod
+    def plot_bar(cls, x, height, title: str):
+        fig = plt.figure(figsize=(18, 7))
+        ax = fig.subplots(1, 1)
+        ax.bar(x=x, height=height)
+        ax.set_title(title)
+        ax.legend()
