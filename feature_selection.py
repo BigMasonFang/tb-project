@@ -17,103 +17,80 @@ def plot_importance_select(data: DataFrame,
                            labels: DataFrame,
                            importances: Iterable,
                            importance_threshold: float = 0.01,
-                           select_num: int = None):
+                           select_num: int = 10):
     ploter = Ploter()
-    # estimator.fit(data, labels)
-    # importances = np.abs(estimator.coef_)
     for label_name, importance in zip(labels.columns, importances):
-        # plot features with coef > 0.01
+        # plot features with coef > threshold
         select_importance_index = np.where(importance > importance_threshold)
         select_importance = importance[select_importance_index]
         select_cols = np.array(data.columns)[select_importance_index]
-        if select_num:
-            # sorting
-            select_importance_numed = np.argsort(select_importance)[::-1][:10]
-            select_importance = select_importance[select_importance_numed]
-            select_cols = select_cols[select_importance_numed]
+
+        # sorting
+        select_importance_numed = np.argsort(select_importance)[::-1][:select_num]
+        select_importance = select_importance[select_importance_numed]
+        select_cols = select_cols[select_importance_numed]
         ploter.plot_bar(
             select_cols,
             select_importance,
             title=f'Top {select_num} Feature importances via coefficients on {label_name} (> {importance_threshold})')
 
 
-def get_feature_importance(data: DataFrame, label: DataFrame, estimator) -> DataFrame:
+def get_feature_importance(data: DataFrame, labels: DataFrame, estimator) -> np.ndarray:
     """using estimator """
-    # TODO finish the _get_feature_importances func dapatation
-    pass
+    estimator.fit(data, labels)
+    if hasattr(estimator, 'feature_importances_'):
+        importances = np.abs(estimator.feature_importances_)
+    elif hasattr(estimator, 'coef_'):
+        importances = np.abs(estimator.coef_)
+    return importances
 
 
-def SFS_select(data: DataFrame,
-               labels: DataFrame,
-               selector: SelectFromModel,
-               estimator: BaseEstimator = None,
-               select_num=None,
-               scoring: str = None,
-               mode: str = 'multi',
-               fit=True) -> Tuple:
+def selector_handle(selector: SelectFromModel, data: DataFrame, labels: DataFrame, name: str, fit=True) -> Tuple:
+    """selector handle single label model, if fit, return importance as well"""
+    importances = []
+    features, feature_indexs = selector_get_result(selector, data, labels, name)
+    if fit:
+        e = selector.estimator
+        e.fit(data.iloc[:, feature_indexs], labels)
+        importances = get_feature_importance(data, labels, e)
+    return features, feature_indexs, importances
+
+
+def SFS_select_feature(data: DataFrame,
+                       labels: DataFrame,
+                       selector: SelectFromModel,
+                       mode: str = 'multi',
+                       fit=True) -> Tuple:
     """
     model: single means loop labels and do SFS select to each of them, multi means do SFS select once consider it as whole multilabel
     """
-    if not estimator:
-        estimator = LogisticRegression()
-    select_num = select_num or 10
-    # TODO finish the transform
-
-    # sfs_forward = SequentialFeatureSelector(estimator,
-    #                                         n_features_to_select=select_num,
-    #                                         direction="forward",
-    #                                         cv=5,
-    #                                         n_jobs=-1,
-    #                                         scoring=scoring)
-    # sfs_backward = SequentialFeatureSelector(estimator,
-    #                                          n_features_to_select=select_num,
-    #                                          direction="backward",
-    #                                          cv=5,
-    #                                          n_jobs=-1,
-    #                                          scoring=scoring)
     if mode == 'single':
+        features_dict, feature_indexs_dict, importances_dict = {}, {}, {}
         for label_name in labels.columns:
-            f_features = selector_get_result(selector, data, labels[label_name], label_name, fit=fit)
-            # b_features = selector_get_result(sfs_backward, data, labels[label_name], label_name, fit=fit)
             # intersection = set(f_features) & set(b_features)
             # print(f"intersection of two selections for label {label_name}:\n{intersection}\nnum = {len(intersection)}")
+            features, feauture_indexs, importances = selector_handle(selector,
+                                                                     data,
+                                                                     labels[label_name],
+                                                                     label_name,
+                                                                     fit=fit)
+            features_dict[label_name] = features
+            feature_indexs_dict[label_name] = feauture_indexs
+            importances_dict[label_name] = importances
 
-            # if fit:
-            #     estimator.fit(data.iloc[:, list(intersection)], labels)
-            #     if getattr(estimator, 'feature_importances_', None) is not None:
-            #         print(f'feature importance of intersection is:\n{estimator.feature_importances_}')
+        return features_dict, feature_indexs_dict, importances_dict
     else:
-        f_features = selector_get_result(sfs_forward, data, labels, 'all')
-        b_features = selector_get_result(sfs_backward, data, labels, 'all')
-        intersection = set(f_features) & set(b_features)
-        print(f"intersection of two selections for label all:\n{intersection}\nnum = {len(intersection)}")
+        features, feauture_indexs, importances = selector_handle(selector, data, labels, 'all', fit=fit)
 
-        if fit:
-            estimator.fit(data.iloc[:, list(intersection)], labels)
-            if getattr(estimator, 'feature_importances_', None) is not None:
-                print(f'feature importance of intersection is:\n{estimator.feature_importances_}')
-
-    return
+    return features, feauture_indexs, importances
 
 
-def selector_get_result(selector: SelectFromModel, data, labels, label_name, fit=True) -> Iterable:
+def selector_get_result(selector: SelectFromModel, data, labels, label_name) -> Tuple:
     selector.fit(data, labels)
     features_indexs = selector.get_support()
     features = data.columns[features_indexs]
-    print(
-        f"Features selected by forward sequential selection for label {label_name}:\n{features}\nnums = {len(features)}"
-    )
-    if fit:
-        e = selector.estimator_
-        selector.estimator.fit(data.iloc[:, features_indexs], labels)
-        if getattr(selector.estimator, 'feature_importances_', None) is not None:
-            importances = selector.estimator.feature_importances_
-            print(f'feature importance is:\n{importances}')
-        elif getattr(selector.estimator, 'coef_', None) is not None:
-            importances = selector.estimator.coef_
-            print(f'feature importance is:\n{selector.estimator.coef_}')
-        return features, importances
-    return features
+    print(f"Features selected by sequential selection for label {label_name}:\n{features}\nnums = {len(features)}")
+    return features, features_indexs
 
 
 def make_custom_scorer(func=f1_score, average='weighted'):
